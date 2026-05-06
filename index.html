@@ -85,7 +85,6 @@
 </style>
 </head>
 <body>
-
 <div class="header">
   <div>
     <div class="logo-text">Scale-Partners</div>
@@ -96,13 +95,11 @@
     <button class="refresh-btn" onclick="loadData()">↻ Vernieuwen</button>
   </div>
 </div>
-
 <div class="main">
   <div id="loadingState" class="loading">
     <div class="loading-spinner"></div>
     <div>Kandidaatdata laden...</div>
   </div>
-
   <div id="dashboardContent" style="display:none;">
     <div class="campaign-header">
       <div class="campaign-info">
@@ -114,7 +111,6 @@
         <span class="meta-tag">LinkedIn + E-mail</span>
       </div>
     </div>
-
     <div class="kpi-grid">
       <div class="kpi-card" style="--accent:#3D6B4F"><div class="kpi-number" id="kpiBenaderd">0</div><div class="kpi-label">Benaderd</div><div class="kpi-sub" id="kpiBenaderdSub">—</div></div>
       <div class="kpi-card" style="--accent:#8B5CF6"><div class="kpi-number" id="kpiGeaccepteerd">0</div><div class="kpi-label">Geaccepteerd</div><div class="kpi-sub" id="kpiGeaccepteerdSub">—</div></div>
@@ -123,7 +119,6 @@
       <div class="kpi-card" style="--accent:#06B6D4"><div class="kpi-number" id="kpiGesprekken">0</div><div class="kpi-label">Gesprekken</div><div class="kpi-sub">gepland of gevoerd</div></div>
       <div class="kpi-card" style="--accent:#B5862A"><div class="kpi-number" id="kpiConversie">0%</div><div class="kpi-label">Conv. ratio</div><div class="kpi-sub">benaderd → gesprek</div></div>
     </div>
-
     <div class="filters">
       <div class="filter-label">Filter:</div>
       <div class="search-box">
@@ -132,27 +127,18 @@
       </div>
       <select class="filter-select" id="statusFilter" onchange="filterTable()">
         <option value="">Alle statussen</option>
-        <option>Benaderd</option>
-        <option>Geaccepteerd</option>
-        <option>Gereageerd</option>
-        <option>Geïnteresseerd</option>
-        <option>Niet geïnteresseerd</option>
-        <option>Gesprek gepland</option>
-        <option>In behandeling</option>
+        <option>Benaderd</option><option>Geaccepteerd</option><option>Gereageerd</option>
+        <option>Geïnteresseerd</option><option>Niet geïnteresseerd</option>
+        <option>Gesprek gepland</option><option>In behandeling</option>
       </select>
       <select class="filter-select" id="channelFilter" onchange="filterTable()">
         <option value="">Alle kanalen</option>
-        <option>LinkedIn</option>
-        <option>E-mail</option>
-        <option>LinkedIn + E-mail</option>
+        <option>LinkedIn</option><option>E-mail</option><option>LinkedIn + E-mail</option>
       </select>
       <select class="filter-select" id="followupFilter" onchange="filterTable()">
-        <option value="">Opvolging</option>
-        <option>Ja</option>
-        <option>Nee</option>
+        <option value="">Opvolging</option><option>Ja</option><option>Nee</option>
       </select>
     </div>
-
     <div class="table-wrap">
       <table>
         <thead>
@@ -171,7 +157,6 @@
     </div>
   </div>
 </div>
-
 <div class="modal-overlay" id="modal" onclick="closeModal(event)">
   <div class="modal">
     <div class="modal-header">
@@ -181,7 +166,6 @@
     <div id="modalContent"></div>
   </div>
 </div>
-
 <script>
 const SHEET_ID = "1VT8gReG4naRj6BLKzObMZ2xXoa6d4sKYnMkKChU19n8";
 
@@ -197,18 +181,27 @@ const statusConfig = {
 
 let allCandidates = [];
 
+function formatDate(val) {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toLocaleDateString('nl-NL', {day:'2-digit', month:'2-digit', year:'numeric'});
+  }
+  const d = new Date(val);
+  if (isNaN(d)) return String(val);
+  return d.toLocaleDateString('nl-NL', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
 async function loadData() {
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('dashboardContent').style.display = 'none';
-
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
-
   try {
     const res = await fetch(url);
     const text = await res.text();
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const rows = json.table.rows;
-
     allCandidates = rows.map((row, idx) => ({
       id: idx + 1,
       name:         row.c[0]?.v || '',
@@ -218,40 +211,36 @@ async function loadData() {
       status:       row.c[4]?.v || 'Benaderd',
       channel:      row.c[5]?.v || 'LinkedIn',
       attempts:     row.c[6]?.v || 1,
-      firstContact: row.c[7]?.v || '',
-      lastContact:  row.c[8]?.v || '',
+      firstContact: formatDate(row.c[7]?.v),
+      lastContact:  formatDate(row.c[8]?.v),
       email:        row.c[9]?.v || '',
       experience:   row.c[10]?.v || '',
       seniority:    row.c[11]?.v || '',
       rijbewijs:    row.c[12]?.v || '',
       bedrijf:      row.c[13]?.v || '',
       followup:     row.c[14]?.v || 'Nee',
-      followupDate: row.c[15]?.v || '',
+      followupDate: formatDate(row.c[15]?.v),
       notes:        row.c[16]?.v || ''
     })).filter(c => c.name);
-
     updateKPIs(allCandidates);
     renderTable(allCandidates);
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
-
   } catch(err) {
     document.getElementById('loadingState').innerHTML = `
       <div style="color:#EF4444;font-size:15px;">⚠️ Kan data niet laden</div>
       <div style="font-size:13px;margin-top:8px;color:var(--gray);">Controleer of de Google Sheet publiek toegankelijk is.</div>
-      <button onclick="loadData()" style="margin-top:16px;padding:8px 20px;background:var(--green);color:white;border:none;border-radius:8px;cursor:pointer;">Opnieuw proberen</button>
-    `;
+      <button onclick="loadData()" style="margin-top:16px;padding:8px 20px;background:var(--green);color:white;border:none;border-radius:8px;cursor:pointer;">Opnieuw proberen</button>`;
   }
 }
 
 function updateKPIs(data) {
   const total = data.length;
-  const accepted = data.filter(c => !['Benaderd'].includes(c.status)).length;
+  const accepted = data.filter(c => c.status !== 'Benaderd').length;
   const responded = data.filter(c => ['Gereageerd','Geïnteresseerd','Niet geïnteresseerd','Gesprek gepland','In behandeling'].includes(c.status)).length;
   const interested = data.filter(c => ['Geïnteresseerd','Gesprek gepland','In behandeling'].includes(c.status)).length;
   const meetings = data.filter(c => c.status === 'Gesprek gepland').length;
   const conversie = total > 0 ? ((meetings/total)*100).toFixed(1) : 0;
-
   document.getElementById('kpiBenaderd').textContent = total;
   document.getElementById('kpiBenaderdSub').textContent = `${total} totaal`;
   document.getElementById('kpiGeaccepteerd').textContent = accepted;
@@ -296,12 +285,12 @@ function filterTable() {
   const status = document.getElementById('statusFilter').value;
   const channel = document.getElementById('channelFilter').value;
   const followup = document.getElementById('followupFilter').value;
-  const filtered = allCandidates.filter(c => {
-    return (!search || c.name.toLowerCase().includes(search) || c.function.toLowerCase().includes(search) || c.location.toLowerCase().includes(search))
-      && (!status || c.status === status)
-      && (!channel || c.channel.includes(channel))
-      && (!followup || c.followup === followup);
-  });
+  const filtered = allCandidates.filter(c =>
+    (!search || c.name.toLowerCase().includes(search) || c.function.toLowerCase().includes(search) || c.location.toLowerCase().includes(search))
+    && (!status || c.status === status)
+    && (!channel || c.channel.includes(channel))
+    && (!followup || c.followup === followup)
+  );
   renderTable(filtered);
 }
 
